@@ -4,7 +4,6 @@ import cv2
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split
 
 
 def convert_grayscale_to_black_and_white(image, threshold=0.5):
