@@ -1,7 +1,10 @@
+from collections import Counter
+
 import cv2
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def convert_grayscale_to_black_and_white(image, threshold=0.5):
@@ -136,59 +139,58 @@ def calculate_distance(unknown_image, known_image):
     return np.sqrt(distance)
 
 
+def k_nearest_neighbors(unknown_image, list_of_images, k):
+    distances = []
+
+    for known_image_class, known_image in list_of_images:
+        distance = calculate_distance(unknown_image, known_image)
+        distances.append((distance, known_image_class))
+
+    distances.sort(key=lambda x: x[0])  # Sort distances
+    nearest_neighbors = distances[:k]  # Select k nearest neighbors
+
+    # Count occurrences of each class in the nearest neighbors
+    class_counter = Counter(
+        class_label for _, class_label in nearest_neighbors)
+
+    # Get the most common class label among nearest neighbors
+    predicted_class = class_counter.most_common(1)[0][0]
+
+    return predicted_class
+
+
 def main():
     list_of_images = add_image_to_list()
 
+    # Initialisation de la matrice de confusion pour stocker les résultats
+    confusion_matrix = np.zeros((10, 10), dtype=int)
     correct_predictions = 0
     total_tests = 0
 
-    for unknown_image_index in range(len(list_of_images)):
-        unknown_image = list_of_images[unknown_image_index][1]
-        true_class = list_of_images[unknown_image_index][0]
+    k = 2  # Valeur de k pour k-NN
 
-        closest_class = None
-        min_distance = float('inf')
+    for true_class, unknown_image in list_of_images:
+        predicted_class = k_nearest_neighbors(unknown_image, list_of_images, k)
 
-        for i in range(len(list_of_images)):
-            if i != unknown_image_index:
-                known_image_class = list_of_images[i][0]
-                known_image = list_of_images[i][1]
-
-                distance = calculate_distance(unknown_image, known_image)
-
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_class = known_image_class
+        # Mise à jour de la matrice de confusion
+        confusion_matrix[true_class][predicted_class] += 1
 
         total_tests += 1
-        if closest_class == true_class:
+        if predicted_class == true_class:
             correct_predictions += 1
 
-    success_rate = (correct_predictions / total_tests) * 100
+    # Calcul des taux de reconnaissance global et local
+    global_success_rate = (correct_predictions / total_tests) * 100
+    local_success_rate = np.diag(
+        confusion_matrix) / confusion_matrix.sum(axis=1) * 100
 
-    print("Success rate: {:.2f}%".format(success_rate))
+    print("Taux de reconnaissance global: {:.2f}%".format(global_success_rate))
+    print("Taux de reconnaissance local (par classe):")
+    for i, rate in enumerate(local_success_rate):
+        print("Classe {}: {:.2f}%".format(i, rate))
 
-    # Tableau récapitulatif
-    print("Classified Image | True Image")
-    for i in range(len(list_of_images)):
-        unknown_image_class = list_of_images[i][0]
-        predicted_image_class = None
-        min_distance = float('inf')
-
-        for j in range(len(list_of_images)):
-            if j != i:
-                known_image_class = list_of_images[j][0]
-                known_image = list_of_images[j][1]
-
-                distance = calculate_distance(
-                    list_of_images[i][1], known_image)
-
-                if distance < min_distance:
-                    min_distance = distance
-                    predicted_image_class = known_image_class
-
-        print("{:<16} | {:<11}".format(
-            predicted_image_class, unknown_image_class))
+    print("Matrice de confusion:")
+    print(confusion_matrix)
 
 
 main()
