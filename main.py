@@ -139,6 +139,13 @@ def calculate_distance(unknown_image, known_image):
 
 
 def k_nearest_neighbors(unknown_image, list_of_images, k):
+    """
+    Predict the class of the unknown image using k-NN algorithm
+    :param unknown_image: The unknown image
+    :param list_of_images: The list of images
+    :param k: The number of nearest neighbors
+    :return: The predicted class
+    """
     distances = []
 
     for known_image_class, known_image in list_of_images:
@@ -193,7 +200,3 @@ def main():
 
 
 main()
-
-# Retour : dire les caractéristique choisis +image de la matrice
-# et à la fin un classifieur+ résultat obtenue et dire le
-# taux d'apprentissage sur une image trouvé
